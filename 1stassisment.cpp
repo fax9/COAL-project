@@ -1,74 +1,60 @@
-; Macro to display a string
-display macro var
-    lea dx, var
-    mov ah, 9
-    int 21h
-endm
-
-.model small
-.stack 100h
 .data
+; Product data arrays
+product_names db 100*32 dup(' ')   ; Array for 100 product names, each 32 bytes
+product_quantities dw 100 dup(0)   ; Array for 100 product quantities
+product_prices dw 100 dup(0)       ; Array for 100 product prices
+numb dw 0                          ; Product count
 
-; Prompt messages
-menu_msg db "Shop Management System", 13, 10
-         db "1. Add Product Entries", 13, 10
-         db "2. Add Employee Entries", 13, 10
-         db "Enter choice (1-2): $"
-error_msg db "Invalid Input! Try again.", 13, 10, "$"
+name_prompt db "Enter Product Name: $", 13, 10
+quantity_prompt db "Enter Quantity: $", 13, 10
+price_prompt db "Enter Price: $", 13, 10
 
 .code
-main proc
-    mov ax, @data       ; Initialize data segment
-    mov ds, ax
-
-main_loop:
-    ; Display menu
-    lea dx, menu_msg
-    display menu_msg
-    call new_line
-
-    ; Get user choice
-    mov ah, 01h         
-    int 21h
-
-    sub al, '0'         ; Convert ASCII to numeric
-
-    ; Handle choices 1 or 2
-    cmp al, 1
-    je add_product
-    cmp al, 2
-    je add_employee
-
-    ; Invalid input
-    lea dx, error_msg
-    display error_msg
-    call new_line
-    jmp main_loop
-
 add_product:
-    ; Placeholder for product functionality
+    call new_line
+    lea dx, name_prompt
+    display name_prompt
+    call get_string
+
+    mov bx, numb
+    shl bx, 5                ; bx = numb * 32 for 32-byte entries
+    lea si, product_names
+    add si, bx
+    mov cx, 32
+    rep movsb                ; Store product name in product_names[numb]
+
+    ; Enter quantity
+    lea dx, quantity_prompt
+    display quantity_prompt
+    call get_number
+    mov bx, numb
+    shl bx, 1                ; bx = numb * 2 for word entries
+    mov product_quantities[bx], ax
+
+    ; Enter price
+    lea dx, price_prompt
+    display price_prompt
+    call get_number
+    mov product_prices[bx], ax
+
+    inc numb
     call new_line
     jmp main_loop
 
-add_employee:
-    ; Placeholder for employee functionality
-    call new_line
-    jmp main_loop
-
-exit_program:
-    mov ah, 4Ch
-    int 21h
-
-main endp
-
-new_line proc
-    mov dl, 13
-    mov ah, 2
-    int 21h
-    mov dl, 10
-    mov ah, 2
+get_string:
+    ; Temporary buffer for string input
+    input_buffer db 32, ?              ; First byte: max length (32)
+                db 32 dup(' ')
+    lea dx, input_buffer
+    mov ah, 0Ah
     int 21h
     ret
-new_line endp
 
-end main
+get_number:
+    ; Simple number input using AX
+    xor ax, ax
+    mov ah, 01h
+    int 21h
+    sub al, '0'
+    mov ah, 0
+    ret
