@@ -1,75 +1,140 @@
+; Macro to display a string
+display macro var
+    lea dx, var
+    mov ah, 9
+    int 21h
+endm
+
 .model small
 .stack 100h
 .data
 
-; Prompt messages
 menu_msg db "Shop Management System", 13, 10
          db "1. Add Product Entries", 13, 10
          db "2. Add Employee Entries", 13, 10
-         db "3. Exit Program", 13, 10
-         db "Enter choice (1-3): $"
-
+         db "Enter choice (1-2): $"
 error_msg db "Invalid Input! Try again.", 13, 10, "$"
+
+product_names db 100*32 dup(' ')
+product_quantities dw 100 dup(0)
+product_prices dw 100 dup(0)
+numb dw 0
+
+employee_names db 100*32 dup(' ')
+employee_ids dw 100 dup(0)
+employee_numbers dw 100 dup(0)
+emp dw 0
+
+name_prompt db "Enter Name: $", 13, 10
+quantity_prompt db "Enter Quantity: $", 13, 10
+price_prompt db "Enter Price: $", 13, 10
+id_prompt db "Enter CNIC: $", 13, 10
+phone_prompt db "Enter Phone Number: $", 13, 10
 
 .code
 main proc
-    ; Initialize the data segment
     mov ax, @data
     mov ds, ax
 
 main_loop:
-    ; Display the menu
     lea dx, menu_msg
-    mov ah, 09h
-    int 21h
+    display menu_msg
+    call new_line
 
-    ; Prompt user for choice
     mov ah, 01h
     int 21h
-    sub al, '0'                 
+    sub al, '0'
 
-    ; Compare user's choice and branch accordingly
     cmp al, 1
     je add_product
     cmp al, 2
     je add_employee
-    cmp al, 3
-    je exit_program
 
-    ; If invalid input, display error message
     lea dx, error_msg
-    mov ah, 09h
-    int 21h
+    display error_msg
+    call new_line
     jmp main_loop
 
-;---------------------------------------------------
-; Procedure to add a product entry (Day 3 onwards)
 add_product:
-    ; For now, just a placeholder to show functionality
-    lea dx, error_msg
-    mov ah, 09h
-    int 21h
+    call new_line
+    lea dx, name_prompt
+    display name_prompt
+    call get_string
+
+    mov bx, numb
+    shl bx, 5
+    lea si, product_names
+    add si, bx
+    mov cx, 32
+    rep movsb
+
+    lea dx, quantity_prompt
+    display quantity_prompt
+    call get_number
+    mov bx, numb
+    shl bx, 1
+    mov product_quantities[bx], ax
+
+    lea dx, price_prompt
+    display price_prompt
+    call get_number
+    mov product_prices[bx], ax
+
+    inc numb
     call new_line
     jmp main_loop
 
-;---------------------------------------------------
-; Procedure to add an employee entry (Day 3 onwards)
 add_employee:
-    ; For now, just a placeholder to show functionality
-    lea dx, error_msg
-    mov ah, 09h
-    int 21h
+    call new_line
+    lea dx, name_prompt
+    display name_prompt
+    call get_string
+
+    mov bx, emp
+    shl bx, 5
+    lea si, employee_names
+    add si, bx
+    mov cx, 32
+    rep movsb
+
+    lea dx, id_prompt
+    display id_prompt
+    call get_number
+    mov bx, emp
+    shl bx, 1
+    mov employee_ids[bx], ax
+
+    lea dx, phone_prompt
+    display phone_prompt
+    call get_number
+    mov employee_numbers[bx], ax
+
+    inc emp
     call new_line
     jmp main_loop
 
-;---------------------------------------------------
-; Exit Program Procedure
 exit_program:
-    mov ah, 4Ch                
+    mov ah, 4Ch
     int 21h
 
-;---------------------------------------------------
-; New line for better readability
+main endp
+
+get_string:
+    input_buffer db 32, ?
+                db 32 dup(' ')
+    lea dx, input_buffer
+    mov ah, 0Ah
+    int 21h
+    ret
+
+get_number:
+    xor ax, ax
+    mov ah, 01h
+    int 21h
+    sub al, '0'
+    mov ah, 0
+    ret
+
 new_line proc
     mov dl, 13
     mov ah, 2
